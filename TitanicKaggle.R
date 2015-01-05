@@ -145,6 +145,8 @@ write.csv(submit, file = "CARTopenModel.csv", row.names = FALSE)
 
 ###
 ### Feature Engineering
+###
+
 
 rm(list= ls()[!(ls() %in% "reLoadData.fun")]) 
 reLoadData.fun()
@@ -152,7 +154,8 @@ reLoadData.fun()
 names(train)
 
 train$Name[1]
-test$Survived<-0
+
+test$Survived<-NA
 combo.df<-rbind(train,test)
 
 combo.df$Name<-as.character(combo.df$Name)
@@ -175,3 +178,55 @@ round(100*prop.table(table(combo.df$Title)),2)
 combo.df$Title[combo.df$Title %in% c("Mme","Mlle")]<-"Mlle"
 combo.df$Title[combo.df$Title %in% c("Capt","Don","Major","Sir")]<-"Sir"
 combo.df$Title[combo.df$Title %in% c("Dona","Lady","the Countess", "Jonkheer")]<-"Lady"
+
+combo.df$Title<-as.factor(combo.df$Title)
+
+table(combo.df$Title)
+table(combo.df$Title,combo.df$Survived)
+
+
+combo.df$FamilySize<-combo.df$SibSp+combo.df$Parch+1
+
+
+extractSurname.fun<-function(x){
+  #Function extract surname and elimanates spaces.
+  sub(' ', '', strsplit(x, split='[,.]')[[1]][1])
+}
+  
+
+combo.df$Surname<-sapply(combo.df$Name,FUN=extractSurname.fun)
+combo.df$FamilyID<-paste(as.character(combo.df$FamilySize),combo.df$Surname,sep=" ")
+
+combo.df$FamilyID[combo.df$FamilySiz<=2]<-"Small"
+
+famIDs<-data.frame(table(combo.df$FamilyID))
+
+famIDs<-famIDs[famIDs$Freq<=2,]
+
+combo.df$FamilyID[combo.df$FamilyID %in% famIDs$Var1]<-"Small"
+combo.df$FamilyID<-factor(combo.df$FamilyID)  
+
+#breack into train and test sets
+
+trainMod.df<-combo.df[1:891,]
+testMod.df<-combo.df[892:1309,]
+
+
+CARTmodFactors.mod<-rpart(Survived~
+        Pclass+Sex+Age+SibSp+Parch+
+        Fare+Embarked+Title+FamilySize+FamilyID,
+        data=trainMod.df,method="class")
+
+Prediction<-predict(CARTmodFactors.mod,newdata = testMod.df,type="class")
+submit <- data.frame(PassengerId = testMod.df$PassengerId, Survived = Prediction)
+write.csv(submit, file = "./Competition Entries/CARTmodFactorsMod.csv", row.names = FALSE)
+#Accuratcy=79.426%
+
+
+
+
+####
+### 
+###
+
+

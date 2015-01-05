@@ -1,0 +1,9 @@
+---
+title: "TitanicKaggle"
+author: "Manny B"
+date: "January 4, 2015"
+output: html_document
+---
+### Variables
+
+![My Figure](Figures/variables.png)
